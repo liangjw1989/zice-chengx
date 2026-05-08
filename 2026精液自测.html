@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>精液报告评分系统 · 精简建议版</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --bg: #f5f0eb;
+            --card-bg: #ffffff;
+            --text: #3e3a36;
+            --text-secondary: #6b6560;
+            --border: #e0d9d1;
+            --excellent: #1a7a4c;
+            --excellent-bg: #e6f4ec;
+            --excellent-border: #b7dcc8;
+            --good: #2563eb;
+            --good-bg: #e8f0fe;
+            --good-border: #bcd1f7;
+            --pass: #d97706;
+            --pass-bg: #fef7ed;
+            --pass-border: #fce0b4;
+            --fail: #c0392b;
+            --fail-bg: #fdedec;
+            --fail-border: #f5c6cb;
+            --primary: #5c4033;
+            --accent: #c9a96e;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+            --shadow-lg: 0 12px 32px rgba(0,0,0,0.12);
+            --radius-sm: 10px;
+            --radius: 16px;
+            --radius-lg: 20px;
+            --transition: 0.25s cubic-bezier(0.4,0,0.2,1);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(160deg, #f7f3ee 0%, #ede5da 30%, #f5f0e8 60%, #faf7f2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            color: var(--text);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .app-container { width:100%; max-width:440px; position:relative; z-index:1; display:flex; flex-direction:column; gap:16px; }
+        .card { background:var(--card-bg); border-radius:var(--radius); padding:20px 18px; box-shadow:var(--shadow-md); border:1px solid var(--border); }
+        .header { text-align:center; padding:22px 18px 18px; }
+        .header h1 { font-size:1.35rem; font-weight:700; color:var(--primary); }
+        .header .subtitle { font-size:0.82rem; color:var(--text-secondary); margin-top:4px; }
+        .input-group { margin-bottom:14px; }
+        .input-group label { display:flex; align-items:center; gap:6px; font-weight:600; font-size:0.9rem; color:var(--primary); margin-bottom:6px; flex-wrap:wrap; }
+        .input-group .unit { font-weight:400; font-size:0.78rem; color:var(--text-secondary); }
+        .input-group .input-wrapper { position:relative; display:flex; align-items:center; }
+        .input-group input { width:100%; padding:13px 14px; padding-right:60px; font-size:1.05rem; border:2px solid var(--border); border-radius:var(--radius-sm); background:#fdfcf9; color:var(--text); outline:none; font-family:inherit; }
+        .input-group input:focus { border-color:var(--accent); box-shadow:0 0 0 4px rgba(201,169,110,0.1); background:#fff; }
+        .input-suffix { position:absolute; right:14px; font-size:0.85rem; color:var(--text-secondary); pointer-events:none; }
+        .btn-row { display:flex; gap:10px; flex-wrap:wrap; }
+        .btn { flex:1; min-width:100px; padding:13px 16px; font-size:0.95rem; font-weight:600; border:none; border-radius:var(--radius-sm); cursor:pointer; transition:var(--transition); font-family:inherit; display:flex; align-items:center; justify-content:center; gap:7px; }
+        .btn:active { transform:scale(0.97); }
+        .btn-primary { background:var(--primary); color:#fff; }
+        .btn-pregnancy { background:linear-gradient(135deg,#f9e4d4,#fce4d6); color:#7c3a2d; border:2px solid #e8c4af; font-weight:700; }
+        .btn-outline { background:#fff; color:var(--primary); border:2px solid var(--border); }
+        .btn-sm { padding:9px 14px; font-size:0.82rem; flex:0 1 auto; }
+        .result-area { display:none; animation:fadeSlideIn 0.4s ease-out; }
+        .result-area.show { display:block; }
+        @keyframes fadeSlideIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+        .score-cards { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+        .score-card { background:#fdfcf9; border-radius:var(--radius-sm); padding:14px 12px; text-align:center; border:2px solid var(--border); }
+        .score-card .indicator-label { font-size:0.73rem; color:var(--text-secondary); }
+        .score-card .score-value { font-size:2rem; font-weight:700; }
+        .score-card .rating-tag { display:inline-block; padding:3px 10px; border-radius:20px; font-size:0.75rem; font-weight:600; }
+        .score-card.excellent { border-color:var(--excellent-border); background:var(--excellent-bg); }
+        .score-card.excellent .score-value { color:var(--excellent); }
+        .score-card.excellent .rating-tag { background:#c8e6d4; color:#0d5c32; }
+        .score-card.good { border-color:var(--good-border); background:var(--good-bg); }
+        .score-card.good .score-value { color:var(--good); }
+        .score-card.good .rating-tag { background:#d0e0fd; color:#1a4db5; }
+        .score-card.pass { border-color:var(--pass-border); background:var(--pass-bg); }
+        .score-card.pass .score-value { color:var(--pass); }
+        .score-card.pass .rating-tag { background:#fde8c8; color:#a35f04; }
+        .score-card.fail { border-color:var(--fail-border); background:var(--fail-bg); }
+        .score-card.fail .score-value { color:var(--fail); }
+        .score-card.fail .rating-tag { background:#fadbd8; color:#922b21; }
+        .overall-card { text-align:center; padding:16px; border-radius:var(--radius-sm); border:2px solid var(--border); background:#fdfcf9; margin-bottom:10px; }
+        .overall-card .overall-label { font-size:0.78rem; color:var(--text-secondary); }
+        .overall-card .overall-rating { font-size:1.5rem; font-weight:700; }
+        .overall-card .overall-score { font-size:2.4rem; font-weight:800; }
+        .overall-card.excellent { border-color:var(--excellent-border); background:var(--excellent-bg); }
+        .overall-card.excellent .overall-rating, .overall-card.excellent .overall-score { color:var(--excellent); }
+        .overall-card.good { border-color:var(--good-border); background:var(--good-bg); }
+        .overall-card.good .overall-rating, .overall-card.good .overall-score { color:var(--good); }
+        .overall-card.pass { border-color:var(--pass-border); background:var(--pass-bg); }
+        .overall-card.pass .overall-rating, .overall-card.pass .overall-score { color:var(--pass); }
+        .overall-card.fail { border-color:var(--fail-border); background:var(--fail-bg); }
+        .overall-card.fail .overall-rating, .overall-card.fail .overall-score { color:var(--fail); }
+        .advice-box { background:#fef9e7; border:1px solid #f9e79f; border-radius:10px; padding:12px; margin:12px 0 4px; font-size:0.85rem; color:#7d6608; line-height:1.5; }
+        .advice-box strong { color:#b45309; }
+        .couple-note { background:#fff3cd; border:2px solid #ffc107; border-radius:10px; padding:10px; text-align:center; font-weight:700; color:#856404; margin:12px 0 4px; font-size:0.9rem; }
+        .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+        .modal-overlay.show { display:flex; }
+        .modal-dialog { background:#fff; border-radius:var(--radius-lg); padding:20px 16px; width:100%; max-width:420px; box-shadow:var(--shadow-lg); position:relative; max-height:85vh; overflow-y:auto; }
+        .modal-close { position:absolute; top:10px; right:14px; width:34px; height:34px; border-radius:50%; border:none; background:#f5f0eb; color:var(--text-secondary); font-size:1.2rem; cursor:pointer; }
+        .pregnancy-chart { border-radius:var(--radius-sm); overflow:hidden; border:1px solid var(--border); margin-bottom:8px; }
+        .pregnancy-row { display:flex; align-items:stretch; transition:var(--transition); position:relative; }
+        .pregnancy-row .row-left { flex:1; padding:10px 14px; display:flex; flex-direction:column; justify-content:center; border-right:1px solid #eee; }
+        .pregnancy-row .row-left .level-name { font-weight:700; font-size:0.9rem; }
+        .pregnancy-row .row-left .level-desc { font-size:0.7rem; color:var(--text-secondary); }
+        .pregnancy-row .row-right { width:85px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.9rem; background:#fdfcf9; }
+        .pregnancy-row.highlighted { box-shadow:inset 4px 0 0 currentColor; transform:scale(1.02); z-index:1; margin:2px 0; border-radius:6px; }
+        .pregnancy-row.highlighted::after { content:'◀ 当前'; position:absolute; right:90px; top:50%; transform:translateY(-50%); font-size:0.6rem; font-weight:700; color:#fff; background:#3e3a36; padding:2px 6px; border-radius:8px; white-space:nowrap; }
+        .disclaimer { font-size:0.7rem; color:#b0a89e; text-align:center; padding:4px 0; }
+        .toast { position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#3e3a36; color:#fff; padding:10px 20px; border-radius:20px; font-size:0.85rem; z-index:2000; opacity:0; pointer-events:none; transition:opacity 0.3s; }
+        .toast.show { opacity:1; }
+        .admin-table { width:100%; border-collapse:collapse; font-size:0.8rem; margin:12px 0; }
+        .admin-table th, .admin-table td { border:1px solid var(--border); padding:8px 6px; text-align:center; }
+        .admin-table th { background:#f5f0eb; font-weight:600; }
+        @media (max-width:380px) { .card { padding:14px 12px; } .score-card .score-value { font-size:1.6rem; } }
+    </style>
+</head>
+<body>
+    <div class="toast" id="toast"></div>
+    <div class="app-container">
+        <div class="card header">
+            <h1>🔬 精液报告评分系统</h1>
+            <p class="subtitle">加权精细评分 · 浓度70% + PR30%</p>
+        </div>
+
+        <div class="card" id="inputCard">
+            <div class="input-group">
+                <label>🧬 精子浓度 <span class="unit">（百万/mL）</span></label>
+                <div class="input-wrapper">
+                    <input type="text" id="concentration" placeholder="例如：45 或管理员密码" autocomplete="off">
+                    <span class="input-suffix">百万/mL</span>
+                </div>
+            </div>
+            <div class="input-group">
+                <label>🏃 前向运动精子（PR或A级+B级） <span class="unit">（%）</span></label>
+                <div class="input-wrapper">
+                    <input type="number" id="prPercent" placeholder="例如：40" step="0.1" min="0" max="100" autocomplete="off">
+                    <span class="input-suffix">%</span>
+                </div>
+            </div>
+            <div class="btn-row" style="margin-top:14px;">
+                <button class="btn btn-primary" onclick="calculateScore()">📊 开始评分</button>
+                <button class="btn btn-pregnancy" id="btnPregnancy" onclick="showPregnancyChart()" disabled>💗 怀孕评估</button>
+            </div>
+            <div class="btn-row" style="margin-top:8px;">
+                <button class="btn btn-outline btn-sm" onclick="resetAll()">🔄 重置</button>
+                <button class="btn btn-outline btn-sm" onclick="showQRCode()">📱 二维码</button>
+            </div>
+        </div>
+
+        <div class="card result-area" id="resultArea">
+            <h3 style="text-align:center;font-size:0.85rem;color:var(--text-secondary);">📋 评分结果</h3>
+            <div class="score-cards">
+                <div class="score-card" id="scoreCardConc">
+                    <div class="indicator-label">精子浓度评分</div>
+                    <div class="score-value" id="scoreConcValue">-</div>
+                    <div class="rating-tag" id="ratingConcTag">-</div>
+                </div>
+                <div class="score-card" id="scoreCardPR">
+                    <div class="indicator-label">PR百分率评分</div>
+                    <div class="score-value" id="scorePRValue">-</div>
+                    <div class="rating-tag" id="ratingPRTag">-</div>
+                </div>
+            </div>
+            <div class="overall-card" id="overallCard">
+                <div class="overall-label">综合评分（浓度70% + PR30%）</div>
+                <div class="overall-rating" id="overallRating">-</div>
+                <div class="overall-score" id="overallScore">-</div>
+            </div>
+            <div class="advice-box" id="resultAdvice" style="display:none;"></div>
+            <p class="disclaimer">⚠️ <strong>结果仅供参考，不作为诊疗依据。</strong></p>
+        </div>
+
+        <div class="card qr-section" id="qrSection" style="display:none;">
+            <p class="qr-label">📱 扫描二维码打开本应用</p>
+            <div id="qrContainer"></div>
+            <p class="qr-hint" id="qrHint"></p>
+            <button class="btn btn-outline btn-sm" onclick="hideQRCode()">收起二维码</button>
+        </div>
+        <p class="disclaimer">评分采用分段线性计算，综合加权。</p>
+    </div>
+
+    <div class="modal-overlay" id="pregnancyModal">
+        <div class="modal-dialog">
+            <button class="modal-close" onclick="closePregnancyModal()">✕</button>
+            <h3 style="text-align:center;color:var(--primary);margin-bottom:14px;">💗 怀孕难度评估</h3>
+            <div class="pregnancy-chart" id="pregnancyChart"></div>
+            <div class="advice-box" id="pregnancyAdvice"></div>
+            <div class="couple-note" id="coupleNote">⚠️ 需结合配偶情况，建议夫妻同治</div>
+            <p style="text-align:center;font-size:0.78rem;margin-top:6px;">当前综合评分：<strong id="modalOverallScore">-</strong> 分</p>
+            <p class="disclaimer">⚠️ <strong>结果仅供参考，不作为诊疗依据。</strong></p>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="adminModal">
+        <div class="modal-dialog" style="max-width:500px;">
+            <button class="modal-close" onclick="closeAdminModal()">✕</button>
+            <h3 style="text-align:center;color:var(--primary);">🔐 管理员后台</h3>
+            <div style="display:flex;justify-content:space-around;margin:8px 0;">
+                <span>总记录：<strong id="recordCount">0</strong></span>
+                <span>最近：<strong id="lastRecord">-</strong></span>
+            </div>
+            <div style="max-height:40vh;overflow-y:auto;">
+                <table class="admin-table">
+                    <thead><tr><th>时间</th><th>浓度</th><th>PR%</th><th>总分</th><th>评级</th></tr></thead>
+                    <tbody id="adminTableBody"><tr><td colspan="5">暂无记录</td></tr></tbody>
+                </table>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-outline btn-sm" onclick="clearAllRecords()">🗑️ 清除</button>
+                <button class="btn btn-outline btn-sm" onclick="exportRecords()">📋 导出</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const ADMIN_PASSWORD = 'A123888';
+            const STORAGE_KEY = 'semen_report_v4';
+
+            function concScore(conc) {
+                if (conc <= 0) return 0;
+                if (conc <= 15) return (conc / 15) * 60;
+                if (conc <= 66) return 60 + ((conc - 15) / (66 - 15)) * 20;
+                if (conc <= 166) return 80 + ((conc - 66) / (166 - 66)) * 10;
+                return Math.min(99, 90 + ((conc - 166) / (250 - 166)) * 9);
+            }
+
+            function prScore(pr) {
+                if (pr <= 0) return 0;
+                if (pr <= 32) return (pr / 32) * 60;
+                if (pr <= 55) return 60 + ((pr - 32) / (55 - 32)) * 20;
+                if (pr <= 71) return 80 + ((pr - 55) / (71 - 55)) * 10;
+                return Math.min(100, 90 + ((pr - 71) / (100 - 71)) * 10);
+            }
+
+            function getRatingFromScore(score) {
+                if (score >= 90) return { rating: '优秀', tagClass: 'excellent' };
+                if (score >= 80) return { rating: '良好', tagClass: 'good' };
+                if (score >= 60) return { rating: '及格', tagClass: 'pass' };
+                return { rating: '不及格', tagClass: 'fail' };
+            }
+
+            function getAdvice(weighted) {
+                if (weighted >= 90) return '精子参数理想。建议保持良好生活习惯，维持生育力健康。';
+                if (weighted >= 80) return '精子参数良好。建议保持良好生活习惯，维持生育力健康。';
+                if (weighted >= 70) return '参数基本达标。可咨询医生进行生活方式指导，必要时辅以抗氧化治疗优化精子质量。';
+                if (weighted >= 60) return '参数基本达标。可咨询医生进行生活方式指导，必要时辅以抗氧化治疗优化精子质量。';
+                if (weighted >= 45) return '参数明显偏低。建议完善生殖内分泌、生殖超声等检查明确病因，对因治疗（如内分泌调节、抗氧化）。';
+                if (weighted >= 30) return '参数明显偏低。建议完善生殖内分泌、生殖超声等检查明确病因，对因治疗（如内分泌调节、抗氧化）。';
+                return '参数严重异常。建议深度筛查（遗传学、精子DNA碎片率等），综合评估后必要时行辅助生殖技术。';
+            }
+
+            function getPregnancyLevel(weighted) {
+                if (weighted >= 90) return { level:'容易怀孕', desc:'非常理想', range:'90-100分', rowClass:'row-excellent' };
+                if (weighted >= 80) return { level:'较易怀孕', desc:'状况良好', range:'80-89分', rowClass:'row-good' };
+                if (weighted >= 70) return { level:'偏易怀孕', desc:'稍加注意', range:'70-79分', rowClass:'row-good' };
+                if (weighted >= 60) return { level:'可以怀孕', desc:'基本达标', range:'60-69分', rowClass:'row-pass' };
+                if (weighted >= 45) return { level:'偏难怀孕', desc:'需要关注', range:'45-59分', rowClass:'row-fail' };
+                if (weighted >= 30) return { level:'较难怀孕', desc:'明显偏低', range:'30-44分', rowClass:'row-fail' };
+                return { level:'很难怀孕', desc:'重度异常', range:'0-29分', rowClass:'row-fail' };
+            }
+
+            const inputConc = document.getElementById('concentration');
+            const inputPR = document.getElementById('prPercent');
+            const btnPregnancy = document.getElementById('btnPregnancy');
+            const resultArea = document.getElementById('resultArea');
+            const scoreCardConc = document.getElementById('scoreCardConc');
+            const scoreCardPR = document.getElementById('scoreCardPR');
+            const scoreConcValue = document.getElementById('scoreConcValue');
+            const scorePRValue = document.getElementById('scorePRValue');
+            const ratingConcTag = document.getElementById('ratingConcTag');
+            const ratingPRTag = document.getElementById('ratingPRTag');
+            const overallCard = document.getElementById('overallCard');
+            const overallRating = document.getElementById('overallRating');
+            const overallScore = document.getElementById('overallScore');
+            const resultAdvice = document.getElementById('resultAdvice');
+            const pregnancyModal = document.getElementById('pregnancyModal');
+            const pregnancyChart = document.getElementById('pregnancyChart');
+            const pregnancyAdvice = document.getElementById('pregnancyAdvice');
+            const coupleNote = document.getElementById('coupleNote');
+            const modalOverallScore = document.getElementById('modalOverallScore');
+            const adminModal = document.getElementById('adminModal');
+            const adminTableBody = document.getElementById('adminTableBody');
+            const recordCount = document.getElementById('recordCount');
+            const lastRecord = document.getElementById('lastRecord');
+            const toast = document.getElementById('toast');
+            const qrSection = document.getElementById('qrSection');
+            const qrContainer = document.getElementById('qrContainer');
+            const qrHint = document.getElementById('qrHint');
+
+            let currentResult = null;
+            let qrInstance = null;
+            let toastTimer;
+
+            function getRecords() {
+                try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch(e) { return []; }
+            }
+            function saveRecord(rec) {
+                const records = getRecords();
+                records.push(rec);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+            }
+            function clearRecords() { localStorage.removeItem(STORAGE_KEY); }
+
+            function showToast(msg, d=2200) {
+                clearTimeout(toastTimer);
+                toast.textContent = msg;
+                toast.classList.add('show');
+                toastTimer = setTimeout(() => toast.classList.remove('show'), d);
+            }
+
+            function openAdminModal() {
+                refreshAdminTable();
+                adminModal.classList.add('show');
+                document.body.style.overflow = 'hidden';
+                inputConc.value = '';
+                inputPR.value = '';
+                resultArea.classList.remove('show');
+                btnPregnancy.disabled = true;
+                currentResult = null;
+            }
+            function closeAdminModal() { adminModal.classList.remove('show'); document.body.style.overflow = ''; }
+
+            function refreshAdminTable() {
+                const records = getRecords();
+                recordCount.textContent = records.length;
+                if (!records.length) {
+                    lastRecord.textContent = '-';
+                    adminTableBody.innerHTML = '<tr><td colspan="5">暂无记录</td></tr>';
+                    return;
+                }
+                lastRecord.textContent = records[records.length-1].overallRating || '-';
+                adminTableBody.innerHTML = [...records].reverse().map(r => `
+                    <tr><td>${r.timestamp}</td><td>${r.conc}</td><td>${r.pr}%</td><td>${r.weighted}分</td><td>${r.overallRating}</td></tr>
+                `).join('');
+            }
+
+            window.clearAllRecords = () => {
+                if (!getRecords().length) return showToast('⚠️ 无记录');
+                if (confirm('确定清除所有记录？')) { clearRecords(); refreshAdminTable(); showToast('✅ 已清除'); }
+            };
+            window.exportRecords = () => {
+                const records = getRecords();
+                if (!records.length) return showToast('⚠️ 无记录');
+                const csv = '时间,浓度,PR%,浓度分,PR分,加权总分,综合评级\n' + records.map(r =>
+                    `${r.timestamp},${r.conc},${r.pr},${r.concScore},${r.prScore},${r.weighted},${r.overallRating}`).join('\n');
+                const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `精液评分记录_${new Date().toISOString().slice(0,10)}.csv`;
+                a.click();
+                showToast('📋 已导出');
+            };
+
+            window.calculateScore = function() {
+                const concRaw = inputConc.value.trim();
+                const prRaw = inputPR.value.trim();
+                if (concRaw === ADMIN_PASSWORD) { openAdminModal(); return; }
+                if (!concRaw || !prRaw) { showToast('⚠️ 请填写完整'); return; }
+                const conc = parseFloat(concRaw);
+                const pr = parseFloat(prRaw);
+                if (isNaN(conc) || conc < 0) { showToast('⚠️ 浓度无效'); return; }
+                if (isNaN(pr) || pr < 0 || pr > 100) { showToast('⚠️ PR%需0-100'); return; }
+
+                const cScore = Math.round(concScore(conc));
+                const pScore = Math.round(prScore(pr));
+                const weighted = Math.round(cScore * 0.7 + pScore * 0.3);
+                const concRating = getRatingFromScore(cScore);
+                const prRating = getRatingFromScore(pScore);
+                const overallRating = weighted>=90?'优秀':weighted>=80?'良好':weighted>=60?'及格':'不及格';
+                const overallTagClass = weighted>=90?'excellent':weighted>=80?'good':weighted>=60?'pass':'fail';
+                const advice = getAdvice(weighted);
+                const pregnancyInfo = getPregnancyLevel(weighted);
+
+                currentResult = {
+                    conc, pr, cScore, pScore, weighted,
+                    concTagClass: concRating.tagClass,
+                    prTagClass: prRating.tagClass,
+                    overallRating, overallTagClass, advice,
+                    pregnancyLevel: pregnancyInfo.level,
+                    pregnancyDesc: pregnancyInfo.desc,
+                    pregnancyRange: pregnancyInfo.range,
+                    pregnancyRowClass: pregnancyInfo.rowClass,
+                };
+
+                saveRecord({
+                    timestamp: new Date().toLocaleString('zh-CN',{hour12:false}),
+                    conc, pr, concScore:cScore, prScore:pScore, weighted, overallRating
+                });
+
+                scoreConcValue.textContent = cScore + '分';
+                ratingConcTag.textContent = concRating.rating;
+                scoreCardConc.className = 'score-card ' + concRating.tagClass;
+                scorePRValue.textContent = pScore + '分';
+                ratingPRTag.textContent = prRating.rating;
+                scoreCardPR.className = 'score-card ' + prRating.tagClass;
+                overallRating.textContent = overallRating;
+                overallScore.textContent = weighted + '分';
+                overallCard.className = 'overall-card ' + overallTagClass;
+                resultAdvice.style.display = 'block';
+                resultAdvice.innerHTML = `<strong>💡 建议：</strong>${advice}`;
+                resultArea.classList.add('show');
+                btnPregnancy.disabled = false;
+                resultArea.scrollIntoView({behavior:'smooth', block:'center'});
+            };
+
+            window.showPregnancyChart = function() {
+                if (!currentResult) { showToast('⚠️ 请先评分'); return; }
+                const levels = [
+                    { level:'容易怀孕', desc:'非常理想', range:'90-100分', cls:'row-excellent', min:90 },
+                    { level:'较易怀孕', desc:'状况良好', range:'80-89分', cls:'row-good', min:80 },
+                    { level:'偏易怀孕', desc:'稍加注意', range:'70-79分', cls:'row-good', min:70 },
+                    { level:'可以怀孕', desc:'基本达标', range:'60-69分', cls:'row-pass', min:60 },
+                    { level:'偏难怀孕', desc:'需要关注', range:'45-59分', cls:'row-fail', min:45 },
+                    { level:'较难怀孕', desc:'明显偏低', range:'30-44分', cls:'row-fail', min:30 },
+                    { level:'很难怀孕', desc:'重度异常', range:'0-29分', cls:'row-fail', min:0 },
+                ];
+                pregnancyChart.innerHTML = levels.map(l => {
+                    const highlight = currentResult.weighted >= l.min && (l===levels[0] || currentResult.weighted < (levels[levels.indexOf(l)-1]?.min ?? 100));
+                    return `<div class="pregnancy-row ${l.cls}${highlight?' highlighted':''}">
+                        <div class="row-left"><span class="level-name">${l.level}</span><span class="level-desc">${l.desc}</span></div>
+                        <div class="row-right">${l.range}</div>
+                    </div>`;
+                }).join('');
+                pregnancyAdvice.innerHTML = `<strong>💡 建议：</strong>${currentResult.advice}`;
+                coupleNote.style.display = 'block';
+                modalOverallScore.textContent = currentResult.weighted;
+                pregnancyModal.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            };
+
+            window.closePregnancyModal = () => { pregnancyModal.classList.remove('show'); document.body.style.overflow = ''; };
+            window.resetAll = () => {
+                inputConc.value = ''; inputPR.value = ''; currentResult = null;
+                resultArea.classList.remove('show'); btnPregnancy.disabled = true;
+                ['scoreConcValue','scorePRValue','ratingConcTag','ratingPRTag','overallRating','overallScore'].forEach(id => document.getElementById(id).textContent = '-');
+                scoreCardConc.className = 'score-card'; scoreCardPR.className = 'score-card';
+                overallCard.className = 'overall-card';
+                resultAdvice.style.display = 'none'; resultAdvice.innerHTML = '';
+                closePregnancyModal(); closeAdminModal();
+                showToast('🔄 已重置'); inputConc.focus();
+            };
+            window.showQRCode = () => {
+                qrSection.style.display = 'block'; qrContainer.innerHTML = '';
+                const url = window.location.href;
+                if (url.startsWith('file://')) {
+                    qrHint.textContent = '请部署后扫码';
+                    new QRCode(qrContainer, {text:'https://example.com', width:160, height:160});
+                } else {
+                    qrHint.textContent = '扫描二维码即可使用';
+                    new QRCode(qrContainer, {text:url, width:160, height:160});
+                }
+            };
+            window.hideQRCode = () => { qrSection.style.display = 'none'; qrContainer.innerHTML = ''; };
+
+            document.addEventListener('keydown', e => {
+                if (e.key === 'Escape') {
+                    if (pregnancyModal.classList.contains('show')) closePregnancyModal();
+                    if (adminModal.classList.contains('show')) closeAdminModal();
+                }
+            });
+            adminModal.addEventListener('click', e => { if (e.target === adminModal) closeAdminModal(); });
+            pregnancyModal.addEventListener('click', e => { if (e.target === pregnancyModal) closePregnancyModal(); });
+
+            inputConc.addEventListener('keydown', e => {
+                if (e.key === 'Enter') { e.preventDefault(); if (inputConc.value.trim()===ADMIN_PASSWORD) calculateScore(); else if (inputPR.value.trim()) calculateScore(); else inputPR.focus(); }
+            });
+            inputPR.addEventListener('keydown', e => {
+                if (e.key === 'Enter') { e.preventDefault(); if (inputConc.value.trim()) calculateScore(); else inputConc.focus(); }
+            });
+
+            btnPregnancy.disabled = true;
+        })();
+    </script>
+</body>
+</html>
